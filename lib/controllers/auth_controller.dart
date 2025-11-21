@@ -7,20 +7,17 @@ import '../utils/routes.dart';
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
 
-  // Reactive variables (.obs)
   var isLoading = false.obs;
-  var currentUser = Rxn<UserModel>(); // Rxn allows null
+  var currentUser = Rxn<UserModel>();
 
-  // Login Logic
+  // 1. Email/Password Login
   Future<void> login(String email, String password) async {
-    isLoading.value = true; // Update state
-
+    isLoading.value = true;
     try {
       UserModel? user = await _authService.signIn(email, password);
       currentUser.value = user;
 
       if (user != null) {
-        // GetX Navigation
         if (user.role == 'admin') {
           Get.offAllNamed(AppRoutes.adminDashboard);
         } else {
@@ -29,7 +26,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           "Success",
           "Welcome back!",
-          backgroundColor: Colors.green.withOpacity(0.5),
+          backgroundColor: Colors.green.withValues(alpha: 0.5),
           colorText: Colors.white,
         );
       }
@@ -37,28 +34,63 @@ class AuthController extends GetxController {
       Get.snackbar(
         "Login Failed",
         e.toString(),
-        backgroundColor: Colors.red.withOpacity(0.5),
+        backgroundColor: Colors.red.withValues(alpha: 0.5),
         colorText: Colors.white,
       );
     } finally {
-      isLoading.value = false; // Stop loading
+      isLoading.value = false;
     }
   }
 
-  // Register Logic
+  // 2. Email/Password Register
   Future<void> register(String email, String password) async {
     isLoading.value = true;
-
     try {
       await _authService.signUp(email, password);
-      // Navigate to dashboard or login
       Get.offAllNamed(AppRoutes.userDashboard);
-      Get.snackbar("Success", "Account created successfully!");
+      Get.snackbar(
+        "Success",
+        "Account created successfully!",
+        backgroundColor: Colors.green.withValues(alpha: 0.5),
+        colorText: Colors.white,
+      );
     } catch (e) {
       Get.snackbar(
         "Error",
         e.toString(),
-        backgroundColor: Colors.red.withOpacity(0.5),
+        backgroundColor: Colors.red.withValues(alpha: 0.5),
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 3. Google Login
+  Future<void> loginWithGoogle() async {
+    isLoading.value = true;
+    try {
+      UserModel? user = await _authService.signInWithGoogle();
+
+      if (user != null) {
+        currentUser.value = user;
+        if (user.role == 'admin') {
+          Get.offAllNamed(AppRoutes.adminDashboard);
+        } else {
+          Get.offAllNamed(AppRoutes.userDashboard);
+        }
+        Get.snackbar(
+          "Success",
+          "Logged in with Google",
+          backgroundColor: Colors.green.withValues(alpha: 0.5),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Google Login Failed",
+        e.toString(),
+        backgroundColor: Colors.red.withValues(alpha: 0.5),
         colorText: Colors.white,
       );
     } finally {
