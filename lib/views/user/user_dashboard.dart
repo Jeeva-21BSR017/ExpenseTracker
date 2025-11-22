@@ -87,31 +87,59 @@ class _UserDashboardState extends State<UserDashboard> {
           const SizedBox(height: 10),
           _buildSummaryCard(controller),
 
+          // Spending Chart Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 25, 20, 10),
-            child: const Text(
-              "Spending Breakdown",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          _buildSpendingChart(controller),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "Budget Goals",
+                  "Spending Breakdown",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  "(This Month)",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildSpendingChart(controller),
+
+          // Budget Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      "Budget Goals",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      "(Monthly)",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: () => showModalBottomSheet(
@@ -140,6 +168,7 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildActivityTab(HomeController controller, BuildContext context) {
     return Column(
       children: [
+        // FILTER BAR
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
@@ -156,6 +185,7 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
         ),
 
+        // TRANSACTION LIST
         Expanded(
           child: Obx(() {
             final list = controller.filteredTransactions;
@@ -297,7 +327,6 @@ class _UserDashboardState extends State<UserDashboard> {
     });
   }
 
-  // NEW: Date Filter Button Widget
   Widget _buildDateFilterButton(
     BuildContext context,
     HomeController controller,
@@ -484,17 +513,25 @@ class _UserDashboardState extends State<UserDashboard> {
         return const Padding(
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            "Add expenses to see chart.",
+            "Add expenses this month to see chart.",
             style: TextStyle(color: Colors.grey),
           ),
         );
       }
       List<PieChartSectionData> sections = [];
       int index = 0;
+
+      // Calculate monthly total for percentage
+      double monthlyTotal = 0;
+      controller.categorySpending.forEach(
+        (key, value) => monthlyTotal += value,
+      );
+
       controller.categorySpending.forEach((category, amount) {
         final color = Colors.primaries[index % Colors.primaries.length];
-        final total = controller.totalExpense.value;
-        final percentage = total == 0 ? 0 : (amount / total) * 100;
+        final percentage = monthlyTotal == 0
+            ? 0
+            : (amount / monthlyTotal) * 100;
         sections.add(
           PieChartSectionData(
             color: color,

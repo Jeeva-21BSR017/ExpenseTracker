@@ -11,7 +11,8 @@ class HomeController extends GetxController {
 
   var transactions = <TransactionModel>[].obs;
   var budgets = <BudgetModel>[].obs;
-  var categorySpending = <String, double>{}.obs;
+  var categorySpending =
+      <String, double>{}.obs; // Tracks spending for CURRENT MONTH only
 
   // Filters
   var currentFilter = 'All'.obs;
@@ -71,7 +72,6 @@ class HomeController extends GetxController {
     currentFilter.value = filter;
   }
 
-  // NEW: Set Date Range
   void setDateRange(DateTimeRange? range) {
     if (range == null) {
       dateRangeStart.value = null;
@@ -85,22 +85,31 @@ class HomeController extends GetxController {
   void _calculateStats() {
     double income = 0.0;
     double expense = 0.0;
-    Map<String, double> spending = {};
+    Map<String, double> monthlySpending = {};
+
+    final now = DateTime.now();
 
     for (var t in transactions) {
+      // 1. Total Balance Logic (All Time)
       if (t.type == 'income') {
         income += t.amount;
       } else {
         expense += t.amount;
-        if (!spending.containsKey(t.category)) spending[t.category] = 0.0;
-        spending[t.category] = spending[t.category]! + t.amount;
+
+        // 2. Budget Logic (Strictly Current Month)
+        // Only add to spending map if transaction is in the current month and year
+        if (t.date.month == now.month && t.date.year == now.year) {
+          if (!monthlySpending.containsKey(t.category))
+            monthlySpending[t.category] = 0.0;
+          monthlySpending[t.category] = monthlySpending[t.category]! + t.amount;
+        }
       }
     }
 
     totalIncome.value = income;
     totalExpense.value = expense;
     totalBalance.value = income - expense;
-    categorySpending.value = spending;
+    categorySpending.value = monthlySpending;
   }
 
   Future<void> addTransaction(TransactionModel t) async {
@@ -146,7 +155,7 @@ class HomeController extends GetxController {
 
       Get.snackbar(
         "Goal Set",
-        "Budget updated for $category",
+        "Monthly budget updated for $category",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.black87,
         colorText: Colors.white,
