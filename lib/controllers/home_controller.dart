@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../services/firestore_service.dart';
@@ -11,10 +12,8 @@ class HomeController extends GetxController {
 
   var transactions = <TransactionModel>[].obs;
   var budgets = <BudgetModel>[].obs;
-  var categorySpending =
-      <String, double>{}.obs; // Tracks spending for CURRENT MONTH only
+  var categorySpending = <String, double>{}.obs;
 
-  // Filters
   var currentFilter = 'All'.obs;
   var dateRangeStart = Rxn<DateTime>();
   var dateRangeEnd = Rxn<DateTime>();
@@ -27,12 +26,12 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    String uid = _auth.currentUser!.uid;
-
-    transactions.bindStream(_firestoreService.getTransactions(uid));
-    budgets.bindStream(_firestoreService.getBudgets(uid));
-
-    ever(transactions, (_) => _calculateStats());
+    if (_auth.currentUser != null) {
+      String uid = _auth.currentUser!.uid;
+      transactions.bindStream(_firestoreService.getTransactions(uid));
+      budgets.bindStream(_firestoreService.getBudgets(uid));
+      ever(transactions, (_) => _calculateStats());
+    }
   }
 
   List<TransactionModel> get filteredTransactions {
@@ -58,19 +57,15 @@ class HomeController extends GetxController {
         59,
         59,
       );
-
       list = list.where((t) {
         return t.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
             t.date.isBefore(end.add(const Duration(seconds: 1)));
       }).toList();
     }
-
     return list;
   }
 
-  void setFilter(String filter) {
-    currentFilter.value = filter;
-  }
+  void setFilter(String filter) => currentFilter.value = filter;
 
   void setDateRange(DateTimeRange? range) {
     if (range == null) {
@@ -86,18 +81,13 @@ class HomeController extends GetxController {
     double income = 0.0;
     double expense = 0.0;
     Map<String, double> monthlySpending = {};
-
     final now = DateTime.now();
 
     for (var t in transactions) {
-      // 1. Total Balance Logic (All Time)
       if (t.type == 'income') {
         income += t.amount;
       } else {
         expense += t.amount;
-
-        // 2. Budget Logic (Strictly Current Month)
-        // Only add to spending map if transaction is in the current month and year
         if (t.date.month == now.month && t.date.year == now.year) {
           if (!monthlySpending.containsKey(t.category))
             monthlySpending[t.category] = 0.0;
@@ -116,33 +106,25 @@ class HomeController extends GetxController {
     try {
       await _firestoreService.addTransaction(t);
       Get.back();
-      Get.snackbar(
-        "Saved",
-        "Transaction added successfully",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 10,
-        duration: const Duration(seconds: 2),
-        icon: const Icon(Icons.check_circle, color: Colors.green),
-      );
+      _showSuccessSnackbar("Saved", "Transaction added successfully");
+    } on FirebaseException catch (e) {
+      _handleFirebaseError(e, "Could not add transaction");
     } catch (e) {
-      Get.snackbar(
-        "Error",
-        "Could not save: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      _showErrorSnackbar("Error", "An unexpected error occurred.");
     }
   }
 
   Future<void> deleteTransaction(String id) async {
-    await _firestoreService.deleteTransaction(id);
+    try {
+      await _firestoreService.deleteTransaction(id);
+    } catch (e) {
+      _showErrorSnackbar("Delete Failed", "Could not delete transaction.");
+    }
   }
 
   Future<void> setBudget(String category, double limit) async {
     try {
+      if (_auth.currentUser == null) return;
       String uid = _auth.currentUser!.uid;
       final budget = BudgetModel(
         id: '',
@@ -152,29 +134,57 @@ class HomeController extends GetxController {
       );
       await _firestoreService.setBudget(budget);
       Get.back();
-
-      Get.snackbar(
-        "Goal Set",
-        "Monthly budget updated for $category",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 10,
-        icon: const Icon(Icons.flag, color: Colors.blue),
-      );
+      _showSuccessSnackbar("Goal Set", "Monthly budget updated for $category");
+    } on FirebaseException catch (e) {
+      _handleFirebaseError(e, "Could not set budget");
     } catch (e) {
-      Get.snackbar(
-        "Save Failed",
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _showErrorSnackbar("Save Failed", "An unexpected error occurred.");
     }
   }
 
   Future<void> deleteBudget(String id) async {
-    await _firestoreService.deleteBudget(id);
+    try {
+      await _firestoreService.deleteBudget(id);
+    } catch (e) {
+      _showErrorSnackbar("Delete Failed", "Could not delete budget.");
+    }
+  }
+
+  void _handleFirebaseError(FirebaseException e, String defaultMsg) {
+    String message = defaultMsg;
+    if (e.code == 'permission-denied') {
+      message =
+          "You don't have permission to do this. Check your internet or login status.";
+    } else if (e.code == 'unavailable') {
+      message = "You seem to be offline.";
+    }
+    _showErrorSnackbar("Action Failed", message);
+  }
+
+  void _showSuccessSnackbar(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.black87,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 10,
+      duration: const Duration(seconds: 2),
+      icon: const Icon(Icons.check_circle, color: Colors.green),
+    );
+  }
+
+  void _showErrorSnackbar(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withValues(alpha: 0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 10,
+      icon: const Icon(Icons.error_outline, color: Colors.white),
+    );
   }
 }

@@ -7,6 +7,7 @@ import '../../controllers/auth_controller.dart';
 import '../../utils/app_colors.dart';
 import 'add_transaction_sheet.dart';
 import 'set_budget_sheet.dart';
+import 'insights_view.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -26,7 +27,10 @@ class _UserDashboardState extends State<UserDashboard> {
     final List<Widget> pages = [
       _buildHomeTab(homeController, context),
       _buildActivityTab(homeController, context),
+      const InsightsView(),
     ];
+
+    List<String> titles = ["Overview", "Transactions", "Insights"];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -34,7 +38,7 @@ class _UserDashboardState extends State<UserDashboard> {
         elevation: 0,
         backgroundColor: AppColors.background,
         title: Text(
-          _currentIndex == 0 ? "Overview" : "Transactions",
+          titles[_currentIndex],
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 22,
@@ -48,7 +52,9 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
         ],
       ),
+
       body: pages[_currentIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -64,8 +70,13 @@ class _UserDashboardState extends State<UserDashboard> {
             icon: Icon(Icons.list_alt),
             label: "Activity",
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_chart_outlined),
+            label: "Insights",
+          ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
@@ -87,7 +98,6 @@ class _UserDashboardState extends State<UserDashboard> {
           const SizedBox(height: 10),
           _buildSummaryCard(controller),
 
-          // Spending Chart Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 25, 20, 10),
             child: Row(
@@ -114,7 +124,6 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
           _buildSpendingChart(controller),
 
-          // Budget Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             child: Row(
@@ -168,7 +177,6 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildActivityTab(HomeController controller, BuildContext context) {
     return Column(
       children: [
-        // FILTER BAR
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
@@ -185,7 +193,6 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
         ),
 
-        // TRANSACTION LIST
         Expanded(
           child: Obx(() {
             final list = controller.filteredTransactions;
@@ -264,7 +271,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         ),
                       ),
                       Text(
-                        "${isIncome ? '+' : '-'}\$${t.amount.toStringAsFixed(0)}",
+                        "${isIncome ? '+' : '-'}\₹${t.amount.toStringAsFixed(0)}",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: color,
@@ -436,7 +443,7 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
           Obx(
             () => Text(
-              "\$${controller.totalBalance.value.toStringAsFixed(2)}",
+              "\₹${controller.totalBalance.value.toStringAsFixed(2)}",
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 32,
@@ -493,7 +500,7 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
             Obx(
               () => Text(
-                "\$${value.value.toStringAsFixed(0)}",
+                "\₹${value.value.toStringAsFixed(0)}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -520,8 +527,6 @@ class _UserDashboardState extends State<UserDashboard> {
       }
       List<PieChartSectionData> sections = [];
       int index = 0;
-
-      // Calculate monthly total for percentage
       double monthlyTotal = 0;
       controller.categorySpending.forEach(
         (key, value) => monthlyTotal += value,
@@ -650,7 +655,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     Row(
                       children: [
                         Text(
-                          "\$${spent.toStringAsFixed(0)}",
+                          "\₹${spent.toStringAsFixed(0)}",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isOverBudget
@@ -659,7 +664,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           ),
                         ),
                         Text(
-                          " / \$${budget.limit.toStringAsFixed(0)}",
+                          " / \₹${budget.limit.toStringAsFixed(0)}",
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
