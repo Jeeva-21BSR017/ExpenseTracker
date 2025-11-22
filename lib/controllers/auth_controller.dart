@@ -10,7 +10,7 @@ class AuthController extends GetxController {
   var isLoading = false.obs;
   var currentUser = Rxn<UserModel>();
 
-  // 1. Email/Password Login
+  // 1. Login
   Future<void> login(String email, String password) async {
     isLoading.value = true;
     try {
@@ -23,12 +23,6 @@ class AuthController extends GetxController {
         } else {
           Get.offAllNamed(AppRoutes.userDashboard);
         }
-        Get.snackbar(
-          "Success",
-          "Welcome back!",
-          backgroundColor: Colors.green.withValues(alpha: 0.5),
-          colorText: Colors.white,
-        );
       }
     } catch (e) {
       Get.snackbar(
@@ -42,7 +36,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // 2. Email/Password Register
+  // 2. Register
   Future<void> register(String email, String password) async {
     isLoading.value = true;
     try {
@@ -50,7 +44,7 @@ class AuthController extends GetxController {
       Get.offAllNamed(AppRoutes.userDashboard);
       Get.snackbar(
         "Success",
-        "Account created successfully!",
+        "Account created!",
         backgroundColor: Colors.green.withValues(alpha: 0.5),
         colorText: Colors.white,
       );
@@ -79,12 +73,6 @@ class AuthController extends GetxController {
         } else {
           Get.offAllNamed(AppRoutes.userDashboard);
         }
-        Get.snackbar(
-          "Success",
-          "Logged in with Google",
-          backgroundColor: Colors.green.withValues(alpha: 0.5),
-          colorText: Colors.white,
-        );
       }
     } catch (e) {
       Get.snackbar(
