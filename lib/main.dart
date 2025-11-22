@@ -3,8 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'firebase_options.dart';
 import 'utils/routes.dart';
+import 'controllers/auth_controller.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/register_view.dart';
+import 'views/user/user_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +15,6 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-
     runApp(const MyApp());
   } catch (e) {
     print("FIREBASE INIT FAILED: $e");
@@ -30,14 +31,18 @@ class MyApp extends StatelessWidget {
       title: 'Expense Tracker',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
+
+      initialBinding: BindingsBuilder(() {
+        Get.put(AuthController());
+      }),
+
       initialRoute: AppRoutes.login,
       getPages: [
         GetPage(name: AppRoutes.login, page: () => const LoginView()),
         GetPage(name: AppRoutes.register, page: () => const RegisterView()),
         GetPage(
           name: AppRoutes.userDashboard,
-          page: () =>
-              const Scaffold(body: Center(child: Text("User Dashboard"))),
+          page: () => const UserDashboard(),
         ),
         GetPage(
           name: AppRoutes.adminDashboard,
@@ -74,17 +79,7 @@ class ErrorApp extends StatelessWidget {
                     color: Colors.red,
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Likely Cause: You haven't configured Firebase keys yet.",
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  errorMessage,
-                  style: const TextStyle(color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
+                Text(errorMessage, textAlign: TextAlign.center),
               ],
             ),
           ),

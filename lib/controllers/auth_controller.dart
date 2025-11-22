@@ -97,4 +97,10 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // 4. Logout
+  Future<void> logout() async {
+    await _authService.signOut();
+    Get.offAllNamed(AppRoutes.login);
+  }
 }
