@@ -7,6 +7,7 @@ import 'controllers/auth_controller.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/register_view.dart';
 import 'views/user/user_dashboard.dart';
+import 'views/admin/admin_dashboard.dart'; // <--- 1. Import this
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,10 +45,11 @@ class MyApp extends StatelessWidget {
           name: AppRoutes.userDashboard,
           page: () => const UserDashboard(),
         ),
+
+        // FIX: Use the real AdminDashboard widget here
         GetPage(
           name: AppRoutes.adminDashboard,
-          page: () =>
-              const Scaffold(body: Center(child: Text("Admin Dashboard"))),
+          page: () => const AdminDashboard(),
         ),
       ],
     );
