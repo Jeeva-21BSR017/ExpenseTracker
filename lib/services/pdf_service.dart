@@ -12,15 +12,18 @@ class PdfService {
   ) async {
     final pdf = pw.Document();
 
-    // Load the Google Font
-    final font = await PdfGoogleFonts.nunitoExtraLight();
+    // Use Poppins, which generally has good symbol support
+    // Alternatively, we could use a specific Hindi font like 'Hind' if this fails
+    final font = await PdfGoogleFonts.poppinsRegular();
+    final boldFont = await PdfGoogleFonts.poppinsBold();
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        theme: pw.ThemeData.withFont(base: font),
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
         build: (pw.Context context) {
           return [
+            // 1. Header
             pw.Header(
               level: 0,
               child: pw.Row(
@@ -44,17 +47,24 @@ class PdfService {
               ),
             ),
             pw.SizedBox(height: 20),
+
+            // 2. Summary Cards (Row)
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
+                // We remove the symbol from the string and let the table handle it if needed,
+                // OR use a standard "Rs." if the symbol keeps failing.
+                // Let's try the unicode first with the new font.
                 _buildPdfSummaryCard(
                   "Avg. Monthly Spend",
-                  "\$${avgSpend.toStringAsFixed(0)}",
+                  "Rs. ${avgSpend.toStringAsFixed(0)}",
                 ),
                 _buildPdfSummaryCard("Highest Spend Month", highestMonth),
               ],
             ),
             pw.SizedBox(height: 30),
+
+            // 3. Monthly Breakdown Table
             pw.Text(
               "Monthly Breakdown (Last 6 Months)",
               style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
@@ -80,11 +90,12 @@ class PdfService {
               headers: ['Month', 'Income', 'Expense', 'Net Saving'],
               data: stats.map((stat) {
                 final net = stat.income - stat.expense;
+                // Using "Rs." is the safest bet for cross-platform PDF compatibility without custom font assets
                 return [
                   DateFormat('MMMM y').format(stat.date),
-                  '+\$${stat.income.toStringAsFixed(2)}',
-                  '-\$${stat.expense.toStringAsFixed(2)}',
-                  '${net >= 0 ? '+' : ''}\$${net.toStringAsFixed(2)}',
+                  '+Rs. ${stat.income.toStringAsFixed(2)}',
+                  '-Rs. ${stat.expense.toStringAsFixed(2)}',
+                  '${net >= 0 ? '+' : ''}Rs. ${net.toStringAsFixed(2)}',
                 ];
               }).toList(),
             ),
