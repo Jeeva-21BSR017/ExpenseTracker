@@ -1,7 +1,3 @@
-// This is a PLACEHOLDER file to stop compilation errors.
-// You must run 'flutterfire configure' in your terminal to generate the real file
-// that connects to your specific Firebase project.
-
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -32,8 +28,6 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // PLACEHOLDER VALUES - THESE WILL NOT WORK FOR REAL LOGIN
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAUrH2ONblkz1evrVN186m4DzV7AXRxRPw',
     appId: '1:5382402056:android:1fad4bcd4f39c099a1e1bd',
@@ -41,8 +35,6 @@ class DefaultFirebaseOptions {
     projectId: 'expensetracker-733cd',
     storageBucket: 'expensetracker-733cd.firebasestorage.app',
   );
-
-  // Run 'flutterfire configure' to get your real keys.
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAhfyrFEYc188uiwwg4EacE2TbzxjGodjY',
@@ -81,5 +73,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'expensetracker-733cd.firebasestorage.app',
     measurementId: 'G-QDNLM2DR36',
   );
-
 }

@@ -10,14 +10,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // 1. Try to initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // 2. If successful, run the App
+
     runApp(const MyApp());
   } catch (e) {
-    // 3. If it FAILS (likely due to bad API keys), show the error on screen
     print("FIREBASE INIT FAILED: $e");
     runApp(ErrorApp(errorMessage: e.toString()));
   }
@@ -51,7 +49,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// A simple red screen to show startup errors
 class ErrorApp extends StatelessWidget {
   final String errorMessage;
   const ErrorApp({super.key, required this.errorMessage});

@@ -1,21 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Initialize with Client ID only if on Web
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb
-        ? '5382402056-7r9omk6ajl8ebp7cu5im1rapt795e312.apps.googleusercontent.com' // <--- PASTE ID HERE inside quotes
+        ? '5382402056-7r9omk6ajl8ebp7cu5im1rapt795e312.apps.googleusercontent.com'
         : null,
   );
-
-  // ... (rest of the code stays exactly the same: signUp, signIn, signInWithGoogle, signOut)
 
   // 1. Register User (Email/Password)
   Future<UserModel?> signUp(String email, String password) async {

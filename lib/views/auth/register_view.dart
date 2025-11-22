@@ -8,8 +8,6 @@ class RegisterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If you are navigating here, Get.find works if AuthController was initialized in LoginView.
-    // However, if you reload directly on this page during dev, use Get.put to be safe.
     final AuthController authController = Get.put(AuthController());
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();

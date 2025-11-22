@@ -160,7 +160,6 @@ class LoginView extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
-        // Fixed deprecated usage
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
