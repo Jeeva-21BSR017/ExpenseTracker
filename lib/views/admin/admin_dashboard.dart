@@ -17,7 +17,7 @@ class AdminDashboard extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.black87,
         title: const Text(
-          "Admin Console",
+          "Admin",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -56,6 +56,14 @@ class AdminDashboard extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
 
+              double adoptionRate = 0;
+              if (adminController.totalUsers.value > 0) {
+                adoptionRate =
+                    (adminController.activeBudgetUsers.value /
+                        adminController.totalUsers.value) *
+                    100;
+              }
+
               return Column(
                 children: [
                   Row(
@@ -82,11 +90,12 @@ class AdminDashboard extends StatelessWidget {
                   const SizedBox(height: 15),
 
                   _buildStatCard(
-                    "Total Active Budgets",
-                    adminController.activeBudgetUsers.value.toString(),
+                    "Budget Feature Usage",
+                    "${adminController.activeBudgetUsers.value}",
                     Icons.track_changes_outlined,
                     Colors.orange,
-                    subtitle: "Adoption of budgeting feature",
+                    subtitle:
+                        "Adoption Rate: ${adoptionRate.toStringAsFixed(1)}%",
                   ),
                 ],
               );
@@ -143,6 +152,7 @@ class AdminDashboard extends StatelessWidget {
     String? subtitle,
   }) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -188,7 +198,11 @@ class AdminDashboard extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ],

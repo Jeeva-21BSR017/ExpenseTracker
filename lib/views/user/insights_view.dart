@@ -204,9 +204,9 @@ class InsightsView extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 14.0),
                     child: Text(
-                      DateFormat('MMM').format(
-                        controller.monthlyStats[index].date,
-                      ),
+                      DateFormat(
+                        'MMM',
+                      ).format(controller.monthlyStats[index].date),
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
