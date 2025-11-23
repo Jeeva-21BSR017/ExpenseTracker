@@ -1,8 +1,10 @@
+// lib/views/user/profile_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter/services.dart';
 
-import '../../controllers/auth_controller.dart'; // Ensure this path matches yours
-import '../../utils/app_colors.dart'; // Ensure this path matches yours
+import '../../controllers/auth_controller.dart';
+import '../../utils/app_colors.dart';
 
 // --- MAIN PROFILE VIEW ---
 class ProfileView extends StatelessWidget {
@@ -12,15 +14,8 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final AuthController authController = Get.find();
 
-    // _nameFromEmail removed, using authController.displayName directly
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        20,
-      ), // Adjusted top padding for header
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Column(
         children: [
           // Profile Card
@@ -31,7 +26,7 @@ class ProfileView extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withOpacity(0.03),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -48,8 +43,11 @@ class ProfileView extends StatelessWidget {
                         ? NetworkImage(user!.photoUrl!)
                         : null,
                     child: user?.photoUrl == null
-                        ? const Icon(Icons.person,
-                            size: 32, color: AppColors.primary)
+                        ? const Icon(
+                            Icons.person,
+                            size: 32,
+                            color: AppColors.primary,
+                          )
                         : null,
                   );
                 }),
@@ -60,7 +58,8 @@ class ProfileView extends StatelessWidget {
                     children: [
                       Obx(
                         () => Text(
-                          authController.displayName,
+                          // displayName helper (falls back to email prefix)
+                          _displayName(authController),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -156,6 +155,16 @@ class ProfileView extends StatelessWidget {
     );
   }
 
+  String _displayName(AuthController authController) {
+    final user = authController.currentUser.value;
+    if (user == null) return 'User';
+    // If your user model already exposes displayName, use it.
+    final maybeName = (user.displayName ?? '').trim();
+    if (maybeName.isNotEmpty) return maybeName;
+    final email = user.email ?? '';
+    return email.isNotEmpty ? email.split('@')[0] : 'User';
+  }
+
   Widget _buildProfileOption(
     IconData icon,
     String title, {
@@ -168,7 +177,7 @@ class ProfileView extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -219,7 +228,105 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     final user = authController.currentUser.value;
     if (user != null) {
-      _nameController.text = user.displayName ?? user.email.split('@')[0];
+      // use displayName if present else email prefix
+      _nameController.text =
+          (user.displayName != null && user.displayName!.trim().isNotEmpty)
+          ? user.displayName!
+          : (user.email != null ? user.email!.split('@')[0] : '');
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onSavePressed() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      Get.snackbar(
+        "Validation",
+        "Name cannot be empty",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    try {
+      // Call your AuthController update method.
+      // If your method name is different, replace with the correct one.
+      await authController.updateProfile(name: name);
+
+      // Show modern success dialog (center card) then auto-dismiss and pop edit page.
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => Align(
+          alignment: Alignment.center,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 240,
+              padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.check, size: 40, color: Colors.green),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    "Profile updated",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Your profile has been updated successfully.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // keep the success dialog visible briefly
+      await Future.delayed(const Duration(milliseconds: 1200));
+      // close the dialog
+      if (mounted) Navigator.of(context).pop();
+      // pop the EditProfilePage to return to ProfileView
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      // If update failed show error snackbar
+      Get.snackbar(
+        "Error",
+        "Could not update profile. Try again.",
+        backgroundColor: Colors.red.withOpacity(0.9),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -256,16 +363,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () async {
-                  await authController.updateProfile(name: _nameController.text);
-                  Get.back();
-                  Get.snackbar(
-                    "Success",
-                    "Profile updated successfully",
-                    backgroundColor: Colors.green,
-                    colorText: Colors.white,
-                  );
-                },
+                onPressed: _onSavePressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -352,7 +450,7 @@ class NotificationsPage extends StatelessWidget {
       ),
       child: Obx(() {
         final isEnabled =
-            authController.currentUser.value?.notifications[key] ?? false;
+            authController.currentUser.value?.notifications?[key] ?? false;
         return SwitchListTile(
           title: Text(
             title,
@@ -415,7 +513,8 @@ class SecurityPage extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         authController.sendPasswordReset(
-                            authController.currentUser.value?.email);
+                          authController.currentUser.value?.email,
+                        );
                         Get.back();
                       },
                       style: ElevatedButton.styleFrom(

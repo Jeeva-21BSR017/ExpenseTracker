@@ -83,7 +83,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               decoration: const InputDecoration(
                 labelText: "Amount",
                 border: OutlineInputBorder(),
-                prefixText: "\$ ",
+                prefixText: "\₹ ",
               ),
             ),
             const SizedBox(height: 10),

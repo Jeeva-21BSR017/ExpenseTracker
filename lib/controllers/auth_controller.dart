@@ -157,8 +157,6 @@ class AuthController extends GetxController {
     try {
       await _authService.updateUser(updatedUser);
       // Stream will update currentUser
-      Get.snackbar("Success", "Profile updated successfully",
-          backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       _showErrorSnackbar("Update Failed", "Could not update profile.");
     }
@@ -193,14 +191,16 @@ class AuthController extends GetxController {
     if (email == null || email.isEmpty) return;
     try {
       await _authService.sendPasswordResetEmail(email);
-      Get.snackbar("Email Sent", "Check your inbox to reset password",
-          backgroundColor: Colors.green, colorText: Colors.white);
+      Get.snackbar(
+        "Email Sent",
+        "Check your inbox to reset password",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
     } catch (e) {
       _showErrorSnackbar("Error", "Could not send reset email.");
     }
   }
-
-
 
   String _getReadableErrorMessage(FirebaseAuthException e) {
     debugPrint("Firebase Auth Error Code: ${e.code}");
