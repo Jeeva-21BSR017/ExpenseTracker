@@ -690,6 +690,41 @@ class _UserDashboardState extends State<UserDashboard> {
                     color: isIncome ? AppColors.accent : AppColors.error,
                   ),
                 ),
+
+                // DELETE ICON
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text("Delete transaction"),
+                        content: const Text(
+                          "Are you sure you want to delete this transaction?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(c).pop(false),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(c).pop(true),
+                            child: const Text("Delete"),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      controller.deleteTransaction(t.id);
+                    }
+                  },
+                  child: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: Colors.grey,
+                  ),
+                ),
               ],
             ),
           );
@@ -852,13 +887,51 @@ class _UserDashboardState extends State<UserDashboard> {
                       budget.category,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    Text(
-                      "\₹${spent.toStringAsFixed(0)} / \₹${budget.limit.toStringAsFixed(0)}",
-                      style: TextStyle(
-                        color: isOverBudget ? AppColors.error : Colors.grey,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          "\₹${spent.toStringAsFixed(0)} / \₹${budget.limit.toStringAsFixed(0)}",
+                          style: TextStyle(
+                            color: isOverBudget ? AppColors.error : Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // DELETE ICON FOR BUDGET
+                        GestureDetector(
+                          onTap: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                title: const Text("Delete budget"),
+                                content: const Text(
+                                  "Are you sure you want to delete this budget goal?",
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(c).pop(false),
+                                    child: const Text("Cancel"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(c).pop(true),
+                                    child: const Text("Delete"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              controller.deleteBudget(budget.id);
+                            }
+                          },
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
