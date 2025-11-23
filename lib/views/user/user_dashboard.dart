@@ -127,13 +127,7 @@ class _UserDashboardState extends State<UserDashboard> {
     if (_currentIndex == 2) title = "Financial Insights";
     if (_currentIndex == 3) title = "My Profile";
 
-    String _nameFromEmail(String? email) {
-      if (email == null || email.isEmpty) return "User";
-      final local = email.split('@')[0];
-      if (local.isEmpty) return "User";
-      return local[0].toUpperCase() +
-          (local.length > 1 ? local.substring(1) : "");
-    }
+    // _nameFromEmail removed, using authController.displayName directly
 
     return SizedBox(
       height: totalHeight,
@@ -168,12 +162,9 @@ class _UserDashboardState extends State<UserDashboard> {
                                   fontSize: 14,
                                 ),
                               ),
-                              Obx(() {
-                                final email =
-                                    authController.currentUser.value?.email;
-                                final name = _nameFromEmail(email);
+                                Obx(() {
                                 return Text(
-                                  name,
+                                  authController.displayName,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 24,
@@ -192,21 +183,38 @@ class _UserDashboardState extends State<UserDashboard> {
                             ),
                           ),
 
-                    IconButton(
-                      onPressed: () => authController.logout(),
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                    Row(
+                      children: [
+                        Obx(() {
+                          final user = authController.currentUser.value;
+                          if (user?.photoUrl != null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundImage: NetworkImage(user!.photoUrl!),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }),
+                        IconButton(
+                          onPressed: () => authController.logout(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.logout_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          tooltip: "Logout",
                         ),
-                        child: const Icon(
-                          Icons.logout_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      tooltip: "Logout",
+                      ],
                     ),
                   ],
                 ),
@@ -220,7 +228,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   const SizedBox(height: 6),
                   Obx(
                     () => Text(
-                      "\₹${homeController.totalBalance.value.toStringAsFixed(2)}",
+                      "₹${homeController.totalBalance.value.toStringAsFixed(2)}",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 36,
@@ -382,7 +390,7 @@ class _UserDashboardState extends State<UserDashboard> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -424,7 +432,7 @@ class _UserDashboardState extends State<UserDashboard> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 18),
@@ -439,7 +447,7 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
             Obx(
               () => Text(
-                "\₹${value.value.toStringAsFixed(0)}",
+                "₹${value.value.toStringAsFixed(0)}",
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -506,7 +514,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: color, size: 26),
@@ -540,7 +548,7 @@ class _UserDashboardState extends State<UserDashboard> {
                 ),
 
                 Text(
-                  "${isIncome ? '+' : '-'} \₹${t.amount.toStringAsFixed(2)}",
+                  "${isIncome ? '+' : '-'} ₹${t.amount.toStringAsFixed(2)}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -771,7 +779,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        "\₹${spent.toStringAsFixed(0)}  /  \₹${budget.limit.toStringAsFixed(0)}",
+                        "₹${spent.toStringAsFixed(0)}  /  ₹${budget.limit.toStringAsFixed(0)}",
                         style: TextStyle(
                           color: isOverBudget ? AppColors.error : Colors.grey,
                           fontSize: 13,

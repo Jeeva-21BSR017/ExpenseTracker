@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,29 @@ import '../utils/routes.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
+  StreamSubscription<UserModel?>? _userSubscription;
+
+  @override
+  void onInit() {
+    super.onInit();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _startUserStream(user.uid);
+    }
+  }
+
+  @override
+  void onClose() {
+    _userSubscription?.cancel();
+    super.onClose();
+  }
+
+  void _startUserStream(String uid) {
+    _userSubscription?.cancel();
+    _userSubscription = _authService.streamUser(uid).listen((user) {
+      currentUser.value = user;
+    });
+  }
 
   var isLoading = false.obs;
   var currentUser = Rxn<UserModel>();
@@ -14,6 +38,10 @@ class AuthController extends GetxController {
     final user = currentUser.value;
 
     if (user == null) return "User";
+
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName!;
+    }
 
     if (user.email != null && user.email!.isNotEmpty) {
       return user.email!.split('@')[0];
@@ -27,9 +55,9 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       UserModel? user = await _authService.signIn(email, password);
-      currentUser.value = user;
-
+      // currentUser.value = user; // Handled by stream
       if (user != null) {
+        _startUserStream(user.uid);
         if (user.role == 'admin') {
           Get.offAllNamed(AppRoutes.adminDashboard);
         } else {
@@ -52,7 +80,10 @@ class AuthController extends GetxController {
   Future<void> register(String email, String password) async {
     isLoading.value = true;
     try {
-      await _authService.signUp(email, password);
+      UserModel? user = await _authService.signUp(email, password);
+      if (user != null) {
+        _startUserStream(user.uid);
+      }
       Get.offAllNamed(AppRoutes.userDashboard);
       Get.snackbar(
         "Success",
@@ -81,7 +112,8 @@ class AuthController extends GetxController {
       UserModel? user = await _authService.signInWithGoogle();
 
       if (user != null) {
-        currentUser.value = user;
+        // currentUser.value = user; // Handled by stream
+        _startUserStream(user.uid);
         if (user.role == 'admin') {
           Get.offAllNamed(AppRoutes.adminDashboard);
         } else {
@@ -102,9 +134,73 @@ class AuthController extends GetxController {
 
   // 4. Logout
   Future<void> logout() async {
+    _userSubscription?.cancel();
     await _authService.signOut();
+    currentUser.value = null;
     Get.offAllNamed(AppRoutes.login);
   }
+
+  // 5. Update Profile
+  Future<void> updateProfile({String? name, String? photoUrl}) async {
+    final user = currentUser.value;
+    if (user == null) return;
+
+    final updatedUser = UserModel(
+      uid: user.uid,
+      email: user.email,
+      role: user.role,
+      displayName: name ?? user.displayName,
+      photoUrl: photoUrl ?? user.photoUrl,
+      notifications: user.notifications,
+    );
+
+    try {
+      await _authService.updateUser(updatedUser);
+      // Stream will update currentUser
+      Get.snackbar("Success", "Profile updated successfully",
+          backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      _showErrorSnackbar("Update Failed", "Could not update profile.");
+    }
+  }
+
+  // 6. Update Notification Settings
+  Future<void> updateNotification(String key, bool value) async {
+    final user = currentUser.value;
+    if (user == null) return;
+
+    final newNotifications = Map<String, bool>.from(user.notifications);
+    newNotifications[key] = value;
+
+    final updatedUser = UserModel(
+      uid: user.uid,
+      email: user.email,
+      role: user.role,
+      displayName: user.displayName,
+      photoUrl: user.photoUrl,
+      notifications: newNotifications,
+    );
+
+    try {
+      await _authService.updateUser(updatedUser);
+    } catch (e) {
+      _showErrorSnackbar("Update Failed", "Could not update settings.");
+    }
+  }
+
+  // 7. Send Password Reset
+  Future<void> sendPasswordReset(String? email) async {
+    if (email == null || email.isEmpty) return;
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      Get.snackbar("Email Sent", "Check your inbox to reset password",
+          backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      _showErrorSnackbar("Error", "Could not send reset email.");
+    }
+  }
+
+
 
   String _getReadableErrorMessage(FirebaseAuthException e) {
     debugPrint("Firebase Auth Error Code: ${e.code}");

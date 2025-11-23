@@ -1,5 +1,7 @@
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/user_model.dart';
@@ -28,7 +30,7 @@ class AuthService {
       });
       return UserModel(uid: result.user!.uid, email: email, role: 'user');
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -51,7 +53,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -91,7 +93,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -100,4 +102,33 @@ class AuthService {
     await _googleSignIn.signOut();
     await _auth.signOut();
   }
+
+  // 5. Stream User Data
+  Stream<UserModel?> streamUser(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((doc) {
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromMap(doc.data() as Map<String, dynamic>, uid);
+      }
+      return null;
+    });
+  }
+
+  // 6. Update User Data
+  Future<void> updateUser(UserModel user) async {
+    try {
+      await _db.collection('users').doc(user.uid).update(user.toMap());
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 7. Send Password Reset Email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 }

@@ -89,8 +89,9 @@ class HomeController extends GetxController {
       } else {
         expense += t.amount;
         if (t.date.month == now.month && t.date.year == now.year) {
-          if (!monthlySpending.containsKey(t.category))
+          if (!monthlySpending.containsKey(t.category)) {
             monthlySpending[t.category] = 0.0;
+          }
           monthlySpending[t.category] = monthlySpending[t.category]! + t.amount;
         }
       }
@@ -106,6 +107,28 @@ class HomeController extends GetxController {
     try {
       await _firestoreService.addTransaction(t);
       Get.back();
+
+      // Check for budget exceeded
+      if (t.type == 'expense') {
+        final budget = budgets.firstWhereOrNull((b) => b.category == t.category);
+        if (budget != null) {
+          final currentSpent = categorySpending[t.category] ?? 0.0;
+          // Note: currentSpent might not yet include this new transaction if stream hasn't updated
+          // So we add it manually for the check
+          if (currentSpent + t.amount > budget.limit) {
+            Get.snackbar(
+              "Budget Exceeded!",
+              "You have exceeded your budget for ${t.category}",
+              backgroundColor: Colors.orange,
+              colorText: Colors.white,
+              icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              duration: const Duration(seconds: 4),
+            );
+            return;
+          }
+        }
+      }
+
       _showSuccessSnackbar("Saved", "Transaction added successfully");
     } on FirebaseException catch (e) {
       _handleFirebaseError(e, "Could not add transaction");
