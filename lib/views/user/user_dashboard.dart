@@ -8,6 +8,7 @@ import '../../utils/app_colors.dart';
 import 'add_transaction_sheet.dart';
 import 'set_budget_sheet.dart';
 import 'insights_view.dart';
+import 'profile_view.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -37,7 +38,7 @@ class _UserDashboardState extends State<UserDashboard> {
         break;
       case 3:
       default:
-        currentBody = _buildProfileBodyContent(authController, context);
+        currentBody = const ProfileView();
         break;
     }
 
@@ -369,162 +370,6 @@ class _UserDashboardState extends State<UserDashboard> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [const SizedBox(height: 10), const InsightsView()],
-      ),
-    );
-  }
-
-  Widget _buildProfileBodyContent(
-    AuthController authController,
-    BuildContext context,
-  ) {
-    final String email =
-        authController.currentUser.value?.email ?? "user@example.com";
-
-    String _nameFromEmail(String? emailArg) {
-      if (emailArg == null || emailArg.isEmpty) return "User";
-      final local = emailArg.split('@')[0];
-      if (local.isEmpty) return "User";
-      return local[0].toUpperCase() +
-          (local.length > 1 ? local.substring(1) : "");
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.secondaryBackground,
-                  child: Icon(Icons.person, size: 32, color: AppColors.primary),
-                ),
-                const SizedBox(width: 20),
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Obx(
-                      () => Text(
-                        _nameFromEmail(authController.currentUser.value?.email),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              "General",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-          _buildProfileOption(Icons.person_outline, "Edit Profile"),
-          _buildProfileOption(
-            Icons.notifications_none_rounded,
-            "Notifications",
-          ),
-          _buildProfileOption(Icons.security_outlined, "Security"),
-          _buildProfileOption(Icons.help_outline_rounded, "Help & Support"),
-
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => authController.logout(),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: AppColors.error),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                foregroundColor: AppColors.error,
-              ),
-              child: const Text(
-                "Log Out",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileOption(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 16,
-          color: Colors.grey,
-        ),
-        onTap: () {},
       ),
     );
   }
