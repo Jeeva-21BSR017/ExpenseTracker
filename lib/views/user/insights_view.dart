@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/report_controller.dart';
+import '../../controllers/home_controller.dart';
 import '../../utils/app_colors.dart';
 
 class InsightsView extends StatelessWidget {
@@ -11,6 +12,7 @@ class InsightsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ReportController controller = Get.put(ReportController());
+    final HomeController homeController = Get.find();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -19,214 +21,446 @@ class InsightsView extends StatelessWidget {
         children: [
           const SizedBox(height: 10),
 
-          // MAIN CHART SECTION
-          _buildChartSection(controller),
+          // 1. SPENDING BY CATEGORY
+          const Text(
+            "Spending by category",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 15),
+          _buildCategorySplit(homeController),
 
           const SizedBox(height: 32),
 
+          // 2. WEEKLY EXPENSE
+          const Text(
+            "Weekly Expense Report",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 15),
+          _buildWeeklyBarChart(controller),
+
+          const SizedBox(height: 32),
+
+          // 3. MONTHLY TREND
+          const Text(
+            "Monthly Spending Trend",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 15),
+          _buildTradingLineChart(controller),
+
+          const SizedBox(height: 32),
+
+          // 4. METRICS
           const Text(
             "Key Metrics",
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
-              letterSpacing: -0.5,
             ),
           ),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 15),
           _buildMetricsGrid(controller),
 
           const SizedBox(height: 32),
 
-          _buildDownloadButton(controller),
-
-          const SizedBox(height: 40),
+          // 5. DOWNLOAD
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => controller.exportPdf(),
+              icon: const Icon(Icons.download_rounded, size: 20),
+              label: const Text(
+                "Download Full Report",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  // ------------------ CHART SECTION --------------------
-  Widget _buildChartSection(ReportController controller) {
+  Widget _buildCategorySplit(HomeController controller) {
     return Container(
-      height: 420,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem("Income", AppColors.accent),
-              const SizedBox(width: 32),
-              _buildLegendItem("Expense", AppColors.error),
-            ],
-          ),
-          const SizedBox(height: 32),
-
-          // Remove Expanded → use SizedBox instead
           SizedBox(
-            height: 260,
+            height: 200,
             child: Obx(() {
-              if (controller.isLoading.isTrue) {
-                return const Center(child: CircularProgressIndicator());
+              if (controller.categorySpending.isEmpty) {
+                return PieChart(
+                  PieChartData(
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 50,
+                    sections: [
+                      PieChartSectionData(
+                        value: 1,
+                        color: Colors.grey.shade200,
+                        radius: 30,
+                        showTitle: false,
+                      ),
+                    ],
+                  ),
+                );
               }
-              if (controller.monthlyStats.isEmpty) {
-                return _buildEmptyState();
-              }
-              return _buildBarChart(controller);
+              return PieChart(
+                PieChartData(
+                  sectionsSpace: 4,
+                  centerSpaceRadius: 60,
+                  sections: _buildPieSections(controller),
+                ),
+              );
             }),
           ),
+          const SizedBox(height: 20),
+          Obx(() {
+            if (controller.categorySpending.isEmpty)
+              return const Text("No expenses yet");
+            int index = 0;
+            double total = controller.totalExpense.value;
+
+            return Column(
+              children: controller.categorySpending.entries.take(5).map((e) {
+                final color = Colors.primaries[index % Colors.primaries.length];
+                final percent = total == 0 ? 0 : (e.value / total) * 100;
+                index++;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            e.key,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        "${percent.toStringAsFixed(0)}%",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.bar_chart_rounded,
-              size: 48,
-              color: Colors.grey.shade300,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "No data available yet",
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontWeight: FontWeight.w600,
-            ),
+  // --- 2. WEEKLY BAR CHART ---
+  Widget _buildWeeklyBarChart(ReportController controller) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBarChart(ReportController controller) {
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: _calculateMaxY(controller.monthlyStats) * 1.2,
-
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchTooltipData: BarTouchTooltipData(
-            tooltipRoundedRadius: 12,
-            tooltipPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
-            tooltipMargin: 8,
-            tooltipBgColor: AppColors.textPrimary,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              String label = rodIndex == 0 ? 'Income' : 'Expense';
-              return BarTooltipItem(
-                '$label\n',
-                const TextStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+      child: Obx(() {
+        return BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: _calculateMaxYWeekly(controller.weeklyStats),
+            barTouchData: BarTouchData(enabled: false),
+            gridData: FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 30,
+                  getTitlesWidget: (value, meta) {
+                    int index = value.toInt();
+                    if (index >= 0 && index < controller.weeklyStats.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          DateFormat('E')
+                              .format(controller.weeklyStats[index].date)
+                              .substring(0, 3),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox();
+                  },
                 ),
-                children: [
-                  TextSpan(
-                    text: '\₹${rod.toY.round()}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              ),
+            ),
+            barGroups: controller.weeklyStats.asMap().entries.map((entry) {
+              int idx = entry.key;
+              DayStat stat = entry.value;
+              return BarChartGroupData(
+                x: idx,
+                barRods: [
+                  BarChartRodData(
+                    toY: stat.amount,
+                    color: stat.amount > 0
+                        ? AppColors.accent
+                        : Colors.grey.shade200,
+                    width: 16,
+                    borderRadius: BorderRadius.circular(4),
+                    backDrawRodData: BackgroundBarChartRodData(
+                      show: true,
+                      toY: _calculateMaxYWeekly(controller.weeklyStats),
+                      color: Colors.grey.shade50,
                     ),
                   ),
                 ],
               );
-            },
+            }).toList(),
           ),
-        ),
+        );
+      }),
+    );
+  }
 
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: _calculateInterval(controller.monthlyStats),
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.shade100,
-            strokeWidth: 1,
-            dashArray: [6, 6],
+  // --- MONTHLY GRAPH ---
+  Widget _buildTradingLineChart(ReportController controller) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
+        ],
+      ),
+      child: Obx(() {
+        if (controller.monthlyStats.isEmpty)
+          return const Center(child: Text("No monthly data yet"));
 
-        borderData: FlBorderData(show: false),
-
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 32,
-              getTitlesWidget: (value, meta) {
-                int index = value.toInt();
-                if (index < controller.monthlyStats.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 14.0),
-                    child: Text(
-                      DateFormat(
-                        'MMM',
-                      ).format(controller.monthlyStats[index].date),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox();
-              },
+        return LineChart(
+          LineChartData(
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: true,
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+              getDrawingVerticalLine: (value) =>
+                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
             ),
-          ),
-        ),
-
-        barGroups: controller.monthlyStats.asMap().entries.map((entry) {
-          int idx = entry.key;
-          MonthlyStat stat = entry.value;
-
-          return BarChartGroupData(
-            x: idx,
-            barsSpace: 12,
-            barRods: [
-              _buildRod(stat.income, AppColors.accent),
-              _buildRod(stat.expense, AppColors.error),
+            titlesData: FlTitlesData(
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  getTitlesWidget: (value, meta) => Text(
+                    value >= 1000
+                        ? '${(value / 1000).toStringAsFixed(1)}k'
+                        : value.toInt().toString(),
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: 1,
+                  reservedSize: 30,
+                  getTitlesWidget: (value, meta) {
+                    int index = value.toInt();
+                    if (index >= 0 && index < controller.monthlyStats.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          DateFormat(
+                            'MMM',
+                          ).format(controller.monthlyStats[index].date),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                    return const Text('');
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            minX: 0,
+            maxX: (controller.monthlyStats.length - 1).toDouble(),
+            minY: 0,
+            maxY: _calculateMaxY(controller.monthlyStats) * 1.1,
+            lineBarsData: [
+              LineChartBarData(
+                spots: controller.monthlyStats.asMap().entries.map((e) {
+                  return FlSpot(e.key.toDouble(), e.value.expense);
+                }).toList(),
+                isCurved: false, // TRADING STYLE: SHARP LINES
+                color: AppColors.primary,
+                barWidth: 2,
+                isStrokeCapRound: true,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, barData, index) =>
+                      FlDotCirclePainter(
+                        radius: 4,
+                        color: Colors.white,
+                        strokeWidth: 2,
+                        strokeColor: AppColors.primary,
+                      ),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.2),
+                      AppColors.primary.withValues(alpha: 0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
             ],
-          );
-        }).toList(),
+          ),
+        );
+      }),
+    );
+  }
+
+  List<PieChartSectionData> _buildPieSections(HomeController controller) {
+    List<PieChartSectionData> sections = [];
+    int index = 0;
+    double total = controller.totalExpense.value;
+
+    controller.categorySpending.forEach((category, amount) {
+      final color = Colors.primaries[index % Colors.primaries.length];
+      final percent = total == 0 ? 0 : (amount / total) * 100;
+
+      sections.add(
+        PieChartSectionData(
+          color: color,
+          value: amount,
+          title: "${percent.toStringAsFixed(0)}%",
+          radius: 25,
+          showTitle: false,
+          badgeWidget: _buildFloatingBadge(
+            percent.toStringAsFixed(0) + "%",
+            color,
+          ),
+          badgePositionPercentageOffset: 1.3,
+        ),
+      );
+      index++;
+    });
+    return sections;
+  }
+
+  Widget _buildFloatingBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
       ),
     );
   }
 
-  // ------------------ METRIC CARDS --------------------
   Widget _buildMetricsGrid(ReportController controller) {
     return Obx(
       () => Row(
@@ -253,72 +487,73 @@ class InsightsView extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadButton(ReportController controller) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => controller.exportPdf(),
-        icon: const Icon(Icons.download_rounded, size: 20),
-        label: const Text(
-          "Download Full Report",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+  Widget _buildMetricCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value.isEmpty ? "-" : value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  BarChartRodData _buildRod(double yValue, Color color) {
-    return BarChartRodData(
-      toY: yValue,
-      color: color,
-      width: 16,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-      backDrawRodData: BackgroundBarChartRodData(
-        show: true,
-        toY: _calculateMaxY(Get.find<ReportController>().monthlyStats) * 1.2,
-        color: color.withOpacity(0.08),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
+  double _calculateMaxYWeekly(List<DayStat> stats) {
+    double max = 0;
+    for (var s in stats) {
+      if (s.amount > max) max = s.amount;
+    }
+    return max == 0 ? 100 : max * 1.2;
   }
 
   double _calculateMaxY(List<MonthlyStat> stats) {
     double max = 0;
     for (var s in stats) {
-      if (s.income > max) max = s.income;
       if (s.expense > max) max = s.expense;
     }
     return max == 0 ? 100 : max;
@@ -327,58 +562,5 @@ class InsightsView extends StatelessWidget {
   double _calculateInterval(List<MonthlyStat> stats) {
     double max = _calculateMaxY(stats);
     return max / 4;
-  }
-
-  Widget _buildMetricCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.8),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value.isEmpty ? "-" : value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

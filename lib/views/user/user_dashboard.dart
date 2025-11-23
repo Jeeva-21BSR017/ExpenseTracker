@@ -126,6 +126,14 @@ class _UserDashboardState extends State<UserDashboard> {
     if (_currentIndex == 2) title = "Financial Insights";
     if (_currentIndex == 3) title = "My Profile";
 
+    String _nameFromEmail(String? email) {
+      if (email == null || email.isEmpty) return "User";
+      final local = email.split('@')[0];
+      if (local.isEmpty) return "User";
+      return local[0].toUpperCase() +
+          (local.length > 1 ? local.substring(1) : "");
+    }
+
     return SizedBox(
       height: totalHeight,
       child: Stack(
@@ -159,17 +167,19 @@ class _UserDashboardState extends State<UserDashboard> {
                                   fontSize: 14,
                                 ),
                               ),
-
-                              Obx(
-                                () => Text(
-                                  authController.displayName,
+                              Obx(() {
+                                final email =
+                                    authController.currentUser.value?.email;
+                                final name = _nameFromEmail(email);
+                                return Text(
+                                  name,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                ),
-                              ),
+                                );
+                              }),
                             ],
                           )
                         : Text(
@@ -249,24 +259,6 @@ class _UserDashboardState extends State<UserDashboard> {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "Spending Breakdown",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Icon(Icons.bar_chart, color: Colors.grey),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _buildSpendingChart(controller),
-              const SizedBox(height: 25),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     "Budget Goals",
@@ -276,22 +268,32 @@ class _UserDashboardState extends State<UserDashboard> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => const SetBudgetSheet(),
-                    ),
-                    child: const Text(
-                      "+ Add Goal",
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+
+                  Row(
+                    children: [
+                      const SizedBox(width: 6),
+
+                      GestureDetector(
+                        onTap: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => const SetBudgetSheet(),
+                        ),
+                        child: const Text(
+                          "+ Add Goal",
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
+
+              const SizedBox(height: 10),
+              _buildBudgetDonut(controller),
               const SizedBox(height: 10),
               _buildBudgetList(controller),
             ],
@@ -365,8 +367,9 @@ class _UserDashboardState extends State<UserDashboard> {
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-
-      child: Column(children: [const SizedBox(height: 10), InsightsView()]),
+      child: Column(
+        children: [const SizedBox(height: 10), const InsightsView()],
+      ),
     );
   }
 
@@ -376,6 +379,14 @@ class _UserDashboardState extends State<UserDashboard> {
   ) {
     final String email =
         authController.currentUser.value?.email ?? "user@example.com";
+
+    String _nameFromEmail(String? emailArg) {
+      if (emailArg == null || emailArg.isEmpty) return "User";
+      final local = emailArg.split('@')[0];
+      if (local.isEmpty) return "User";
+      return local[0].toUpperCase() +
+          (local.length > 1 ? local.substring(1) : "");
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -408,7 +419,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   children: [
                     Obx(
                       () => Text(
-                        authController.displayName,
+                        _nameFromEmail(authController.currentUser.value?.email),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -596,6 +607,7 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
+  // Transactions list
   Widget _buildTransactionList(
     HomeController controller, {
     int limit = 0,
@@ -733,70 +745,74 @@ class _UserDashboardState extends State<UserDashboard> {
     });
   }
 
-  // SPENDING CHART
-  Widget _buildSpendingChart(HomeController controller) {
+  Widget _buildBudgetDonut(HomeController controller) {
     return Obx(() {
-      if (controller.categorySpending.isEmpty) {
+      if (controller.budgets.isEmpty) {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
           ),
-          child: const Center(
+          child: const Center(child: Text("No budgets set. Tap '+ Add Goal'")),
+        );
+      }
+
+      final entries = controller.budgets.map((b) {
+        final spent = controller.categorySpending[b.category] ?? 0.0;
+        return MapEntry(b.category, spent);
+      }).toList();
+
+      final totalSpent = entries.fold<double>(0.0, (p, e) => p + e.value);
+
+      if (totalSpent <= 0) {
+        return Container(
+          height: 180,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Center(
             child: Text(
-              "No expenses this month",
-              style: TextStyle(color: Colors.grey),
+              "No spending yet for your budget goals",
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ),
         );
       }
 
       List<PieChartSectionData> sections = [];
-      int index = 0;
-      double monthlyTotal = 0;
-
-      controller.categorySpending.forEach(
-        (key, value) => monthlyTotal += value,
-      );
-
-      controller.categorySpending.forEach((category, amount) {
-        final color = Colors.primaries[index % Colors.primaries.length];
-        final percentage = monthlyTotal == 0
-            ? 0
-            : (amount / monthlyTotal) * 100;
-
+      int idx = 0;
+      for (final e in entries) {
+        final color = Colors.primaries[idx % Colors.primaries.length];
+        final value = e.value;
         sections.add(
           PieChartSectionData(
             color: color,
-            value: amount,
-            title: "${percentage.toStringAsFixed(0)}%",
-            radius: 40,
+            value: value,
+            title: '${((value / totalSpent) * 100).toStringAsFixed(0)}%',
+            radius: 46,
             titleStyle: const TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
         );
-
-        index++;
-      });
+        idx++;
+      }
 
       return Container(
-        height: 200,
-        padding: const EdgeInsets.all(20),
+        height: 180,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade100,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           children: [
@@ -804,34 +820,52 @@ class _UserDashboardState extends State<UserDashboard> {
               child: PieChart(
                 PieChartData(
                   sections: sections,
-                  centerSpaceRadius: 30,
+                  centerSpaceRadius: 28,
                   sectionsSpace: 2,
                 ),
               ),
             ),
-            const SizedBox(width: 20),
+            const SizedBox(width: 12),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: controller.categorySpending.entries.map((e) {
-                int idx = controller.categorySpending.keys.toList().indexOf(
-                  e.key,
-                );
+              children: controller.budgets.asMap().entries.map((entry) {
+                final i = entry.key;
+                final b = entry.value;
+                final color = Colors.primaries[i % Colors.primaries.length];
+                final spent = controller.categorySpending[b.category] ?? 0.0;
+                final percent = totalSpent == 0
+                    ? 0
+                    : (spent / totalSpent) * 100;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
                     children: [
                       Container(
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color:
-                              Colors.primaries[idx % Colors.primaries.length],
+                          color: color,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(e.key, style: const TextStyle(fontSize: 12)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            b.category,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          Text(
+                            "${percent.toStringAsFixed(0)}% (${spent.toStringAsFixed(0)})",
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 );
@@ -843,7 +877,6 @@ class _UserDashboardState extends State<UserDashboard> {
     });
   }
 
-  // BUDGET LIST
   Widget _buildBudgetList(HomeController controller) {
     return Obx(() {
       if (controller.budgets.isEmpty) {
@@ -852,7 +885,7 @@ class _UserDashboardState extends State<UserDashboard> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Center(
             child: Text("No budgets set", style: TextStyle(color: Colors.grey)),
@@ -864,86 +897,73 @@ class _UserDashboardState extends State<UserDashboard> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: controller.budgets.length,
+        padding: const EdgeInsets.only(top: 10),
         itemBuilder: (context, index) {
           final budget = controller.budgets[index];
           final spent = controller.categorySpending[budget.category] ?? 0.0;
-          final progress = (spent / budget.limit).clamp(0.0, 1.0);
           final isOverBudget = spent > budget.limit;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.grey.shade100),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      budget.category,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "\₹${spent.toStringAsFixed(0)} / \₹${budget.limit.toStringAsFixed(0)}",
-                          style: TextStyle(
-                            color: isOverBudget ? AppColors.error : Colors.grey,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        budget.category,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
-                        const SizedBox(width: 8),
-                        // DELETE ICON FOR BUDGET
-                        GestureDetector(
-                          onTap: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (c) => AlertDialog(
-                                title: const Text("Delete budget"),
-                                content: const Text(
-                                  "Are you sure you want to delete this budget goal?",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(c).pop(false),
-                                    child: const Text("Cancel"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.of(c).pop(true),
-                                    child: const Text("Delete"),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirm == true) {
-                              controller.deleteBudget(budget.id);
-                            }
-                          },
-                          child: const Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "\₹${spent.toStringAsFixed(0)}  /  \₹${budget.limit.toStringAsFixed(0)}",
+                        style: TextStyle(
+                          color: isOverBudget ? AppColors.error : Colors.grey,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.grey.shade100,
-                    color: isOverBudget ? AppColors.error : AppColors.accent,
-                    minHeight: 6,
+                      ),
+                    ],
                   ),
+                ),
+
+                GestureDetector(
+                  onTap: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text("Delete budget"),
+                        content: const Text(
+                          "Are you sure you want to delete this budget goal?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(c).pop(false),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(c).pop(true),
+                            child: const Text("Delete"),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      controller.deleteBudget(budget.id);
+                    }
+                  },
+                  child: const Icon(Icons.close, size: 18, color: Colors.grey),
                 ),
               ],
             ),
