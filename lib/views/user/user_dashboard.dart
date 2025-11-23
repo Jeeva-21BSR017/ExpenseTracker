@@ -24,485 +24,567 @@ class _UserDashboardState extends State<UserDashboard> {
     final HomeController homeController = Get.put(HomeController());
     final AuthController authController = Get.find();
 
-    final List<Widget> pages = [
-      _buildHomeTab(homeController, context),
-      _buildActivityTab(homeController, context),
-      const InsightsView(),
-    ];
-
-    List<String> titles = ["Overview", "Transactions", "Insights"];
+    Widget currentBody;
+    switch (_currentIndex) {
+      case 0:
+        currentBody = _buildHomeBodyContent(homeController, context);
+        break;
+      case 1:
+        currentBody = _buildActivityBodyContent(homeController, context);
+        break;
+      case 2:
+        currentBody = _buildInsightsBodyContent(homeController, context);
+        break;
+      case 3:
+      default:
+        currentBody = _buildProfileBodyContent(authController, context);
+        break;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: AppColors.background,
-        title: Text(
-          titles[_currentIndex],
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+
+      body: SingleChildScrollView(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            _buildStaticHeader(authController, homeController),
+            currentBody,
+            const SizedBox(height: 100),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.textSecondary),
-            onPressed: () => authController.logout(),
-          ),
-        ],
       ),
 
-      body: pages[_currentIndex],
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _currentIndex != 3
+          ? Container(
+              width: 64,
+              height: 64,
+              margin: const EdgeInsets.only(top: 24),
+              child: FloatingActionButton(
+                backgroundColor: AppColors.primary,
+                elevation: 4,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.add, color: Colors.white, size: 32),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const AddTransactionSheet(),
+                ),
+              ),
+            )
+          : null,
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: "Activity",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart_outlined),
-            label: "Insights",
-          ),
-        ],
-      ),
-
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () => showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => const AddTransactionSheet(),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: Colors.white,
+        elevation: 10,
+        height: 60,
+        padding: EdgeInsets.zero,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home_rounded, "Home", 0),
+            _buildNavItem(Icons.list_alt_rounded, "Activity", 1),
+            const SizedBox(width: 48),
+            _buildNavItem(Icons.pie_chart_rounded, "Insights", 2),
+            _buildNavItem(Icons.person_rounded, "Profile", 3),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHomeTab(HomeController controller, BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    bool isSelected = _currentIndex == index;
+    return IconButton(
+      onPressed: () => setState(() => _currentIndex = index),
+      icon: Icon(
+        icon,
+        color: isSelected ? AppColors.primary : Colors.grey[400],
+        size: 28,
+      ),
+      tooltip: label,
+    );
+  }
+
+  Widget _buildStaticHeader(
+    AuthController authController,
+    HomeController homeController,
+  ) {
+    final bool isHome = _currentIndex == 0;
+
+    final double bgHeight = isHome ? 230 : 120;
+    final double totalHeight = isHome ? 290 : 120;
+
+    String title = "";
+    if (_currentIndex == 1) title = "All Transactions";
+    if (_currentIndex == 2) title = "Financial Insights";
+    if (_currentIndex == 3) title = "My Profile";
+
+    return SizedBox(
+      height: totalHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          const SizedBox(height: 10),
-          _buildSummaryCard(controller),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 25, 20, 10),
-            child: Row(
-              children: [
-                const Text(
-                  "Spending Breakdown",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  "(This Month)",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
+          Container(
+            height: bgHeight,
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
             ),
-          ),
-          _buildSpendingChart(controller),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "Budget Goals",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    isHome
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Welcome,",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+
+                              Obx(
+                                () => Text(
+                                  authController.displayName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                    IconButton(
+                      onPressed: () => authController.logout(),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      "(Monthly)",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.normal,
-                      ),
+                      tooltip: "Logout",
                     ),
                   ],
                 ),
-                GestureDetector(
-                  onTap: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => const SetBudgetSheet(),
+
+                if (isHome) ...[
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Your Balance",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
-                  child: const Text(
-                    "+ Set Goal",
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 6),
+                  Obx(
+                    () => Text(
+                      "\₹${homeController.totalBalance.value.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
-          _buildBudgetList(controller),
-          const SizedBox(height: 40),
+
+          if (isHome)
+            Positioned(
+              bottom: 0,
+              left: 20,
+              right: 20,
+              child: _buildFloatingSummaryCard(homeController),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildActivityTab(HomeController controller, BuildContext context) {
+  Widget _buildHomeBodyContent(
+    HomeController controller,
+    BuildContext context,
+  ) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-          child: Row(
+        const SizedBox(height: 70),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
             children: [
-              _buildFilterChip(controller, 'All'),
-              const SizedBox(width: 10),
-              _buildFilterChip(controller, 'Income'),
-              const SizedBox(width: 10),
-              _buildFilterChip(controller, 'Expense'),
-              const SizedBox(width: 10),
-              _buildDateFilterButton(context, controller),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    "Spending Breakdown",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Icon(Icons.bar_chart, color: Colors.grey),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildSpendingChart(controller),
+              const SizedBox(height: 25),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Budget Goals",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => const SetBudgetSheet(),
+                    ),
+                    child: const Text(
+                      "+ Add Goal",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildBudgetList(controller),
             ],
           ),
         ),
 
-        Expanded(
-          child: Obx(() {
-            final list = controller.filteredTransactions;
+        const SizedBox(height: 25),
 
-            if (list.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.filter_list_off, size: 48, color: Colors.grey),
-                    SizedBox(height: 10),
-                    Text(
-                      "No transactions found",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Latest Transactions",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final t = list[index];
-                final isIncome = t.type == 'income';
-                final color = isIncome ? AppColors.accent : AppColors.error;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isIncome
-                              ? Icons.arrow_downward_rounded
-                              : Icons.arrow_upward_rounded,
-                          color: color,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.category,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('MMM d, y • h:mm a').format(t.date),
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        "${isIncome ? '+' : '-'}\₹${t.amount.toStringAsFixed(0)}",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () => controller.deleteTransaction(t.id),
-                        child: const Icon(
-                          Icons.delete_outline,
-                          size: 18,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          }),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _currentIndex = 1),
+                child: const Text(
+                  "See all",
+                  style: TextStyle(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
         ),
+
+        _buildTransactionList(controller, limit: 5),
       ],
     );
   }
 
-  Widget _buildFilterChip(HomeController controller, String label) {
-    return Obx(() {
-      final isSelected = controller.currentFilter.value == label;
-      return GestureDetector(
-        onTap: () => controller.setFilter(label),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      );
-    });
-  }
-
-  Widget _buildDateFilterButton(
-    BuildContext context,
+  Widget _buildActivityBodyContent(
     HomeController controller,
+    BuildContext context,
   ) {
-    return Obx(() {
-      final start = controller.dateRangeStart.value;
-      final end = controller.dateRangeEnd.value;
-      final hasDate = start != null && end != null;
-
-      String label = "Date";
-      if (hasDate) {
-        label =
-            "${DateFormat('MM/dd').format(start)} - ${DateFormat('MM/dd').format(end)}";
-      }
-
-      return GestureDetector(
-        onTap: () async {
-          final picked = await showDateRangePicker(
-            context: context,
-            firstDate: DateTime(2020),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-            builder: (context, child) {
-              return Theme(
-                data: Theme.of(context).copyWith(
-                  colorScheme: const ColorScheme.light(
-                    primary: AppColors.primary,
-                    onPrimary: Colors.white,
-                    onSurface: AppColors.textPrimary,
-                  ),
-                ),
-                child: child!,
-              );
-            },
-          );
-          if (picked != null) {
-            controller.setDateRange(picked);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: hasDate ? AppColors.accent : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: hasDate ? AppColors.accent : Colors.grey.shade300,
-            ),
-            boxShadow: hasDate
-                ? [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: hasDate ? Colors.white : AppColors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: hasDate ? Colors.white : AppColors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              if (hasDate) ...[
-                const SizedBox(width: 5),
-                GestureDetector(
-                  onTap: () => controller.setDateRange(null), // Clear filter
-                  child: const Icon(Icons.close, size: 14, color: Colors.white),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
-  Widget _buildSummaryCard(HomeController controller) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          const Text(
-            "Total Balance",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip(controller, 'All'),
+                const SizedBox(width: 10),
+                _buildFilterChip(controller, 'Income'),
+                const SizedBox(width: 10),
+                _buildFilterChip(controller, 'Expense'),
+                const SizedBox(width: 10),
+                _buildDateFilterButton(context, controller),
+              ],
+            ),
           ),
-          Obx(
-            () => Text(
-              "\₹${controller.totalBalance.value.toStringAsFixed(2)}",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
+          const SizedBox(height: 10),
+          _buildTransactionList(controller, isScrollable: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightsBodyContent(
+    HomeController controller,
+    BuildContext context,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+
+      child: Column(children: [const SizedBox(height: 10), InsightsView()]),
+    );
+  }
+
+  Widget _buildProfileBodyContent(
+    AuthController authController,
+    BuildContext context,
+  ) {
+    final String email =
+        authController.currentUser.value?.email ?? "user@example.com";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.secondaryBackground,
+                  child: Icon(Icons.person, size: 32, color: AppColors.primary),
+                ),
+                const SizedBox(width: 20),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Obx(
+                      () => Text(
+                        authController.displayName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "General",
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMoneyInfo(
-                Icons.arrow_downward,
-                "Income",
-                controller.totalIncome,
-                AppColors.accent,
+
+          const SizedBox(height: 10),
+          _buildProfileOption(Icons.person_outline, "Edit Profile"),
+          _buildProfileOption(
+            Icons.notifications_none_rounded,
+            "Notifications",
+          ),
+          _buildProfileOption(Icons.security_outlined, "Security"),
+          _buildProfileOption(Icons.help_outline_rounded, "Help & Support"),
+
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => authController.logout(),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: AppColors.error),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                foregroundColor: AppColors.error,
               ),
-              _buildMoneyInfo(
-                Icons.arrow_upward,
-                "Expense",
-                controller.totalExpense,
-                Colors.orangeAccent,
+              child: const Text(
+                "Log Out",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMoneyInfo(
+  Widget _buildProfileOption(IconData icon, String title) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 16,
+          color: Colors.grey,
+        ),
+        onTap: () {},
+      ),
+    );
+  }
+
+  Widget _buildFloatingSummaryCard(HomeController controller) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSummaryItem(
+              Icons.arrow_upward,
+              AppColors.accent,
+              "Income",
+              controller.totalIncome,
+            ),
+          ),
+          Container(width: 1, height: 40, color: Colors.grey.shade200),
+          const SizedBox(width: 15),
+          Expanded(
+            child: _buildSummaryItem(
+              Icons.arrow_downward,
+              AppColors.error,
+              "Expenses",
+              controller.totalExpense,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(
     IconData icon,
+    Color color,
     String label,
     RxDouble value,
-    Color color,
   ) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(20),
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: color, size: 18),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             Obx(
               () => Text(
                 "\₹${value.value.toStringAsFixed(0)}",
                 style: const TextStyle(
-                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -514,20 +596,132 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildSpendingChart(HomeController controller) {
+  Widget _buildTransactionList(
+    HomeController controller, {
+    int limit = 0,
+    bool isScrollable = false,
+  }) {
     return Obx(() {
-      if (controller.categorySpending.isEmpty) {
+      final rawList = isScrollable
+          ? controller.filteredTransactions
+          : controller.transactions;
+
+      if (rawList.isEmpty) {
         return const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            "Add expenses this month to see chart.",
-            style: TextStyle(color: Colors.grey),
+          padding: EdgeInsets.all(30),
+          child: Center(
+            child: Text(
+              "No transactions yet",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         );
       }
+
+      final list = limit > 0 && rawList.length > limit
+          ? rawList.sublist(0, limit)
+          : rawList;
+
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final t = list[index];
+          final isIncome = t.type == 'income';
+          final color = isIncome ? AppColors.accent : AppColors.error;
+
+          IconData icon = Icons.shopping_bag_outlined;
+          if (t.category == 'Food') icon = Icons.fastfood_rounded;
+          if (t.category == 'Transport')
+            icon = Icons.directions_car_filled_rounded;
+          if (t.category == 'Health') icon = Icons.medical_services_rounded;
+          if (t.category == 'Salary') icon = Icons.attach_money_rounded;
+          if (t.category == 'Entertainment')
+            icon = Icons.movie_creation_rounded;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: color, size: 26),
+                ),
+                const SizedBox(width: 16),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.category,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.note.isNotEmpty
+                            ? t.note
+                            : DateFormat('MMM d').format(t.date),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Text(
+                  "${isIncome ? '+' : '-'} \₹${t.amount.toStringAsFixed(2)}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isIncome ? AppColors.accent : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  // SPENDING CHART
+  Widget _buildSpendingChart(HomeController controller) {
+    return Obx(() {
+      if (controller.categorySpending.isEmpty) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Center(
+            child: Text(
+              "No expenses this month",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        );
+      }
+
       List<PieChartSectionData> sections = [];
       int index = 0;
       double monthlyTotal = 0;
+
       controller.categorySpending.forEach(
         (key, value) => monthlyTotal += value,
       );
@@ -537,30 +731,37 @@ class _UserDashboardState extends State<UserDashboard> {
         final percentage = monthlyTotal == 0
             ? 0
             : (amount / monthlyTotal) * 100;
+
         sections.add(
           PieChartSectionData(
             color: color,
             value: amount,
-            title: '${percentage.toStringAsFixed(0)}%',
+            title: "${percentage.toStringAsFixed(0)}%",
             radius: 40,
             titleStyle: const TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
         );
+
         index++;
       });
 
       return Container(
         height: 200,
-        margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade100,
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -588,7 +789,11 @@ class _UserDashboardState extends State<UserDashboard> {
                       Container(
                         width: 10,
                         height: 10,
-                        color: Colors.primaries[idx % Colors.primaries.length],
+                        decoration: BoxDecoration(
+                          color:
+                              Colors.primaries[idx % Colors.primaries.length],
+                          shape: BoxShape.circle,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(e.key, style: const TextStyle(fontSize: 12)),
@@ -603,27 +808,26 @@ class _UserDashboardState extends State<UserDashboard> {
     });
   }
 
+  // BUDGET LIST
   Widget _buildBudgetList(HomeController controller) {
     return Obx(() {
       if (controller.budgets.isEmpty) {
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
+          width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: const Text(
-            "No budgets set. Tap '+ Set Goal'",
-            style: TextStyle(color: Colors.grey),
+          child: const Center(
+            child: Text("No budgets set", style: TextStyle(color: Colors.grey)),
           ),
         );
       }
+
       return ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: controller.budgets.length,
         itemBuilder: (context, index) {
           final budget = controller.budgets[index];
@@ -637,11 +841,7 @@ class _UserDashboardState extends State<UserDashboard> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isOverBudget
-                    ? AppColors.error.withValues(alpha: 0.3)
-                    : Colors.grey.shade200,
-              ),
+              border: Border.all(color: Colors.grey.shade100),
             ),
             child: Column(
               children: [
@@ -652,38 +852,17 @@ class _UserDashboardState extends State<UserDashboard> {
                       budget.category,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          "\₹${spent.toStringAsFixed(0)}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isOverBudget
-                                ? AppColors.error
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          " / \₹${budget.limit.toStringAsFixed(0)}",
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () => controller.deleteBudget(budget.id),
-                          child: const Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      "\₹${spent.toStringAsFixed(0)} / \₹${budget.limit.toStringAsFixed(0)}",
+                      style: TextStyle(
+                        color: isOverBudget ? AppColors.error : Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -699,5 +878,60 @@ class _UserDashboardState extends State<UserDashboard> {
         },
       );
     });
+  }
+
+  Widget _buildFilterChip(HomeController controller, String label) {
+    return Obx(
+      () => GestureDetector(
+        onTap: () => controller.setFilter(label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: controller.currentFilter.value == label
+                ? AppColors.primary
+                : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: controller.currentFilter.value == label
+                  ? AppColors.primary
+                  : Colors.grey.shade300,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: controller.currentFilter.value == label
+                  ? Colors.white
+                  : Colors.grey,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterButton(
+    BuildContext context,
+    HomeController controller,
+  ) {
+    return GestureDetector(
+      onTap: () async {
+        final d = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+        );
+        if (d != null) controller.setDateRange(d);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: const Text("Date"),
+      ),
+    );
   }
 }

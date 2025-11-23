@@ -12,63 +12,43 @@ class InsightsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ReportController controller = Get.put(ReportController());
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildChartSection(controller),
-            const SizedBox(height: 32),
-            const Text(
-              "Key Metrics",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-              ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+
+          // MAIN CHART SECTION
+          _buildChartSection(controller),
+
+          const SizedBox(height: 32),
+
+          const Text(
+            "Key Metrics",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 16),
-            _buildMetricsGrid(controller),
-            const SizedBox(height: 32),
-            _buildDownloadButton(controller),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildMetricsGrid(controller),
+
+          const SizedBox(height: 32),
+
+          _buildDownloadButton(controller),
+
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Financial Trends",
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "Income vs Expense Overview (Last 6 Months)",
-          style: TextStyle(
-            color: AppColors.textSecondary.withOpacity(0.8),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
+  // ------------------ CHART SECTION --------------------
   Widget _buildChartSection(ReportController controller) {
     return Container(
       height: 420,
@@ -95,7 +75,10 @@ class InsightsView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 32),
-          Expanded(
+
+          // Remove Expanded → use SizedBox instead
+          SizedBox(
+            height: 260,
             child: Obx(() {
               if (controller.isLoading.isTrue) {
                 return const Center(child: CircularProgressIndicator());
@@ -146,6 +129,7 @@ class InsightsView extends StatelessWidget {
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
         maxY: _calculateMaxY(controller.monthlyStats) * 1.2,
+
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
@@ -179,6 +163,7 @@ class InsightsView extends StatelessWidget {
             },
           ),
         ),
+
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -189,25 +174,28 @@ class InsightsView extends StatelessWidget {
             dashArray: [6, 6],
           ),
         ),
+
         borderData: FlBorderData(show: false),
+
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 32,
               getTitlesWidget: (value, meta) {
                 int index = value.toInt();
-                if (index >= 0 && index < controller.monthlyStats.length) {
+                if (index < controller.monthlyStats.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 14.0),
                     child: Text(
                       DateFormat(
                         'MMM',
                       ).format(controller.monthlyStats[index].date),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -220,9 +208,11 @@ class InsightsView extends StatelessWidget {
             ),
           ),
         ),
+
         barGroups: controller.monthlyStats.asMap().entries.map((entry) {
           int idx = entry.key;
           MonthlyStat stat = entry.value;
+
           return BarChartGroupData(
             x: idx,
             barsSpace: 12,
@@ -236,6 +226,7 @@ class InsightsView extends StatelessWidget {
     );
   }
 
+  // ------------------ METRIC CARDS --------------------
   Widget _buildMetricsGrid(ReportController controller) {
     return Obx(
       () => Row(
@@ -281,7 +272,6 @@ class InsightsView extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 18),
           elevation: 4,
-          shadowColor: AppColors.primary.withOpacity(0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -310,17 +300,7 @@ class InsightsView extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.4),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
@@ -395,7 +375,6 @@ class InsightsView extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
-              letterSpacing: -0.5,
             ),
           ),
         ],

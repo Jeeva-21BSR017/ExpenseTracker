@@ -10,6 +10,17 @@ class AuthController extends GetxController {
 
   var isLoading = false.obs;
   var currentUser = Rxn<UserModel>();
+  String get displayName {
+    final user = currentUser.value;
+
+    if (user == null) return "User";
+
+    if (user.email != null && user.email!.isNotEmpty) {
+      return user.email!.split('@')[0];
+    }
+
+    return "User";
+  }
 
   // 1. Login
   Future<void> login(String email, String password) async {
