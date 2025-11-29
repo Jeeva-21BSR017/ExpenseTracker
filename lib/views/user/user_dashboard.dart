@@ -727,7 +727,6 @@ class _UserDashboardState extends State<UserDashboard> {
     });
   }
 
-  // <-- REPLACED _buildBudgetList with your monthly-filtered implementation -->
   Widget _buildBudgetList(HomeController controller) {
     return Obx(() {
       if (controller.budgets.isEmpty) {

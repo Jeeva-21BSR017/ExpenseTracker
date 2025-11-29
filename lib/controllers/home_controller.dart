@@ -110,7 +110,9 @@ class HomeController extends GetxController {
 
       // Check for budget exceeded
       if (t.type == 'expense') {
-        final budget = budgets.firstWhereOrNull((b) => b.category == t.category);
+        final budget = budgets.firstWhereOrNull(
+          (b) => b.category == t.category,
+        );
         if (budget != null) {
           final currentSpent = categorySpending[t.category] ?? 0.0;
           // Note: currentSpent might not yet include this new transaction if stream hasn't updated
@@ -121,7 +123,10 @@ class HomeController extends GetxController {
               "You have exceeded your budget for ${t.category}",
               backgroundColor: Colors.orange,
               colorText: Colors.white,
-              icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              icon: const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.white,
+              ),
               duration: const Duration(seconds: 4),
             );
             return;
