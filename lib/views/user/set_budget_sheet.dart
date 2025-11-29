@@ -70,7 +70,7 @@ class _SetBudgetSheetState extends State<SetBudgetSheet> {
                 return null;
               },
               decoration: const InputDecoration(
-                labelText: "Monthly Limit (\$)",
+                labelText: "Monthly Limit (\₹)",
                 border: OutlineInputBorder(),
               ),
             ),
