@@ -1,84 +1,84 @@
-Personal Finance & Expense Tracker
+# Personal Finance & Expense Tracker
 
-A comprehensive, full-stack mobile and web application designed for personal finance management. Built with Flutter and Firebase, utilizing a clean MVC architecture and reactive state management.
+A comprehensive **full-stack mobile + web application** designed for personal finance management.  
+Built with **Flutter + Firebase**, following a clean **MVC architecture** with **GetX reactive state management**.
 
-Key Features
+---
 
-User Module
+##  Features
 
-Smart Dashboard:
+###  User Module
 
-Real-time Total Balance, Income, and Expense tracking.
+#### **Smart Dashboard**
+- Real-time **Total Balance**, **Income**, and **Expense** tracking.
 
-Transaction Management:
+#### **Transaction Management**
+- Add income & expenses with **categories**, **date**, and **notes**.  
+- Filter by **Income / Expense** or **Date Range**.  
+- Delete transactions easily.
 
-Log expenses and income with categories, dates, and notes.
+#### **Budgeting System**
+- Set **monthly limits** per category.  
+- Visual **progress bars** with color indicators (Green/Red).  
 
-Filter transactions by Type (Income/Expense) or Date Range.
+#### **Financial Insights**
+- **Weekly Activity:** Bar chart for last 7 days.  
+- **Category Breakdown:** Interactive donut chart with percentage badges.  
+- **Monthly Trend:** Smooth area chart for last 6 months.  
+- **PDF Reports:** Downloadable detailed financial statements with currency formatting.
 
-Delete transactions.
+---
 
-Budgeting System:
+###  Admin Module
 
-Set monthly spending limits per category.
+#### **Dedicated Admin Console**
+- Secure, role-based login.
 
-Visual progress bars tracking spending vs. limit (Green/Red indicators).
+#### **Platform Analytics**
+- **User Growth:** Curved area chart.  
+- **Adoption Rate:** Gauge-style visualization for budget usage.
 
-Financial Insights:
+  
+#### **User Management**
+- Read-only list of registered users.
 
-Weekly Activity: Bar chart showing spending over the last 7 days.
+---
 
-Category Breakdown: Interactive Donut chart with floating percentage badges.
+##  Tech Stack
 
-Monthly Trend: Smooth area-chart showing spending trends over the last 6 months.
+| Layer | Technology |
+|-------|------------|
+| Frontend | Flutter (Dart) |
+| Backend | Firebase Auth, Firestore |
+| State Management | GetX |
+| Charts | fl_chart |
 
-PDF Reports: Generate and download detailed financial reports with currency formatting.
+---
 
+##  Screenshots
 
-🛡️ Admin Module
+### **User Dashboard**
+<img src="https://github.com/user-attachments/assets/61051c48-1f13-4a9b-9978-7e8382f1dd75" width="300" height="600">
 
-Dedicated Console: Secure, role-based access for administrators.
+### **Transactions**
+<img src="https://github.com/user-attachments/assets/5dc9d3eb-a88b-470c-b2fc-0ce796a63a86" width="250" height="500">
 
-Platform Analytics:
+### **Financial Insights**
+<img src="https://github.com/user-attachments/assets/28d28d29-adc2-4bb9-88dc-6629430fc298" width="250" height="500">
 
-User Growth: Curved area chart visualizing registration trends.
+### **My Profile**
+<img src="https://github.com/user-attachments/assets/f63c92ff-f3ef-49cd-ae13-d2a6a5c796aa" width="250" height="500">
 
-Adoption Rate: Gauge-style visualization of budget feature usage.
+### **Admin Console**
+<img src="https://github.com/user-attachments/assets/3ada7f97-43b8-4f26-96c5-de9f27878de9" width="250" height="500">
 
-KPI Cards: Total Users and Total Transactions count.
+---
 
-User Management: Read-only list of registered users.
+## Login
+User : user@gmail.com
+password : 12345678
 
-🛠️ Tech Stack
+User : admin@gmail.com
+password : 12345678
 
-Frontend: Flutter (Dart)
-
-Backend: Firebase (Auth, Firestore)
-
-State Management: GetX
-
-Charts: fl_chart
-
-
-📸 Screenshots
-
-User Dashboard
-
-Transactions
-
-Financial Insights
-
-My profile
-
-Admin Console
-
-<img src="" width="200">
-
-<img src="" width="200">
-
-<img src="" width="200">
-
-<img src="" width="200">
-
-<img src="" width="200">
 
