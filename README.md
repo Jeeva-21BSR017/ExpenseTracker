@@ -74,11 +74,5 @@ Built with **Flutter + Firebase**, following a clean **MVC architecture** with *
 
 ---
 
-## Login
-User : user@gmail.com
-password : 12345678
-
-User : admin@gmail.com
-password : 12345678
 
 
